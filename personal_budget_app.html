@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>개인 가계부</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .form-section h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stats-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .amount {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .income { color: #28a745; }
+        .expense { color: #dc3545; }
+        .balance { color: #17a2b8; }
+
+        .transactions-section {
+            grid-column: 1 / -1;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            margin-top: 20px;
+        }
+
+        .transactions-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .transaction-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .transaction-info {
+            flex: 1;
+        }
+
+        .transaction-desc {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .transaction-details {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .transaction-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-left: 15px;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .chart-container {
+            margin-top: 25px;
+            height: 300px;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-section select {
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 개인 가계부</h1>
+            <p>수입과 지출을 체계적으로 관리하세요</p>
+        </div>
+
+        <div class="main-content">
+            <div class="form-section">
+                <h2>거래 내역 추가</h2>
+                <form id="transactionForm">
+                    <div class="form-group">
+                        <label for="description">내용</label>
+                        <input type="text" id="description" placeholder="거래 내용을 입력하세요" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">금액</label>
+                        <input type="number" id="amount" placeholder="금액을 입력하세요" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="type">구분</label>
+                        <select id="type" required>
+                            <option value="">선택하세요</option>
+                            <option value="income">수입</option>
+                            <option value="expense">지출</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">카테고리</label>
+                        <select id="category" required>
+                            <option value="">선택하세요</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="date">날짜</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <button type="submit" class="btn">거래 내역 추가</button>
+                </form>
+            </div>
+
+            <div class="stats-section">
+                <h2>월별 통계</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>총 수입</h3>
+                        <div class="amount income" id="totalIncome">₩0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>총 지출</h3>
+                        <div class="amount expense" id="totalExpense">₩0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>잔액</h3>
+                        <div class="amount balance" id="balance">₩0</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="transactions-section">
+            <h2>거래 내역</h2>
+            <div class="filter-section">
+                <select id="filterMonth">
+                    <option value="">전체 월</option>
+                </select>
+                <select id="filterType">
+                    <option value="">전체 구분</option>
+                    <option value="income">수입</option>
+                    <option value="expense">지출</option>
+                </select>
+                <select id="filterCategory">
+                    <option value="">전체 카테고리</option>
+                </select>
+            </div>
+            <div class="transactions-list" id="transactionsList">
+                <p style="text-align: center; color: #6c757d; padding: 20px;">아직 거래 내역이 없습니다.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 카테고리 정의
+        const categories = {
+            income: ['급여', '용돈', '투자수익', '부업', '기타수입'],
+            expense: ['식비', '교통비', '쇼핑', '문화생활', '의료비', '교육비', '통신비', '기타지출']
+        };
+
+        // 데이터 저장소
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+
+        // DOM 요소
+        const form = document.getElementById('transactionForm');
+        const typeSelect = document.getElementById('type');
+        const categorySelect = document.getElementById('category');
+        const transactionsList = document.getElementById('transactionsList');
+        const totalIncomeEl = document.getElementById('totalIncome');
+        const totalExpenseEl = document.getElementById('totalExpense');
+        const balanceEl = document.getElementById('balance');
+
+        // 차트 변수
+        let categoryChart;
+
+        // 초기화
+        function init() {
+            // 오늘 날짜 설정
+            document.getElementById('date').valueAsDate = new Date();
+            
+            // 이벤트 리스너
+            form.addEventListener('submit', addTransaction);
+            typeSelect.addEventListener('change', updateCategoryOptions);
+            
+            // 필터 이벤트
+            document.getElementById('filterMonth').addEventListener('change', filterTransactions);
+            document.getElementById('filterType').addEventListener('change', filterTransactions);
+            document.getElementById('filterCategory').addEventListener('change', filterTransactions);
+            
+            // 초기 렌더링
+            updateCategoryOptions();
+            renderTransactions();
+            updateStats();
+            initChart();
+            updateFilterOptions();
+        }
+
+        // 카테고리 옵션 업데이트
+        function updateCategoryOptions() {
+            const type = typeSelect.value;
+            categorySelect.innerHTML = '<option value="">선택하세요</option>';
+            
+            if (type && categories[type]) {
+                categories[type].forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    categorySelect.appendChild(option);
+                });
+            }
+        }
+
+        // 거래 내역 추가
+        function addTransaction(e) {
+            e.preventDefault();
+            
+            const transaction = {
+                id: Date.now(),
+                description: document.getElementById('description').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                type: document.getElementById('type').value,
+                category: document.getElementById('category').value,
+                date: document.getElementById('date').value
+            };
+            
+            transactions.push(transaction);
+            saveTransactions();
+            form.reset();
+            document.getElementById('date').valueAsDate = new Date();
+            
+            renderTransactions();
+            updateStats();
+            updateChart();
+            updateFilterOptions();
+        }
+
+        // 거래 내역 삭제
+        function deleteTransaction(id) {
+            if (confirm('이 거래 내역을 삭제하시겠습니까?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveTransactions();
+                renderTransactions();
+                updateStats();
+                updateChart();
+                updateFilterOptions();
+            }
+        }
+
+        // 거래 내역 렌더링
+        function renderTransactions() {
+            const filtered = getFilteredTransactions();
+            
+            if (filtered.length === 0) {
+                transactionsList.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">조건에 맞는 거래 내역이 없습니다.</p>';
+                return;
+            }
+            
+            transactionsList.innerHTML = filtered
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .map(transaction => `
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-desc">${transaction.description}</div>
+                            <div class="transaction-details">
+                                ${transaction.category} • ${formatDate(transaction.date)}
+                            </div>
+                        </div>
+                        <div class="transaction-amount ${transaction.type}">
+                            ${transaction.type === 'income' ? '+' : '-'}${formatAmount(transaction.amount)}
+                        </div>
+                        <button class="delete-btn" onclick="deleteTransaction(${transaction.id})">삭제</button>
+                    </div>
+                `).join('');
+        }
+
+        // 통계 업데이트
+        function updateStats() {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const monthTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
+            
+            const totalIncome = monthTransactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const totalExpense = monthTransactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const balance = totalIncome - totalExpense;
+            
+            totalIncomeEl.textContent = formatAmount(totalIncome);
+            totalExpenseEl.textContent = formatAmount(totalExpense);
+            balanceEl.textContent = formatAmount(balance);
+            balanceEl.className = `amount ${balance >= 0 ? 'income' : 'expense'}`;
+        }
+
+        // 차트 초기화
+        function initChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            updateChart();
+        }
+
+        // 차트 업데이트
+        function updateChart() {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const monthExpenses = transactions.filter(t => 
+                t.type === 'expense' && t.date.startsWith(currentMonth)
+            );
+            
+            const categoryTotals = {};
+            monthExpenses.forEach(t => {
+                categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+            });
+            
+            const labels = Object.keys(categoryTotals);
+            const data = Object.values(categoryTotals);
+            
+            categoryChart.data.labels = labels;
+            categoryChart.data.datasets[0].data = data;
+            categoryChart.update();
+        }
+
+        // 필터 옵션 업데이트
+        function updateFilterOptions() {
+            // 월 필터
+            const months = [...new Set(transactions.map(t => t.date.slice(0, 7)))].sort().reverse();
+            const monthFilter = document.getElementById('filterMonth');
+            monthFilter.innerHTML = '<option value="">전체 월</option>';
+            months.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = formatMonth(month);
+                monthFilter.appendChild(option);
+            });
+            
+            // 카테고리 필터
+            const allCategories = [...new Set(transactions.map(t => t.category))].sort();
+            const categoryFilter = document.getElementById('filterCategory');
+            categoryFilter.innerHTML = '<option value="">전체 카테고리</option>';
+            allCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categoryFilter.appendChild(option);
+            });
+        }
+
+        // 필터링된 거래 내역 가져오기
+        function getFilteredTransactions() {
+            const monthFilter = document.getElementById('filterMonth').value;
+            const typeFilter = document.getElementById('filterType').value;
+            const categoryFilter = document.getElementById('filterCategory').value;
+            
+            return transactions.filter(t => {
+                return (!monthFilter || t.date.startsWith(monthFilter)) &&
+                       (!typeFilter || t.type === typeFilter) &&
+                       (!categoryFilter || t.category === categoryFilter);
+            });
+        }
+
+        // 필터 적용
+        function filterTransactions() {
+            renderTransactions();
+        }
+
+        // 데이터 저장
+        function saveTransactions() {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        }
+
+        // 유틸리티 함수들
+        function formatAmount(amount) {
+            return new Intl.NumberFormat('ko-KR', {
+                style: 'currency',
+                currency: 'KRW'
+            }).format(amount);
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function formatMonth(monthString) {
+            return new Date(monthString + '-01').toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long'
+            });
+        }
+
+        // 앱 초기화
+        init();
+    </script>
+</body>
+</html>
